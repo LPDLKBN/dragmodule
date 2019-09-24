@@ -58,7 +58,7 @@
 		.single-module{
 			margin: 10px 0;
 		}
-		#s-m-active{
+		.single-module.active{
 			border: 1px dotted #08f9e3;
 		}
 		/* 标题模块 */
@@ -182,9 +182,20 @@
 				oMoveWrap.style.left = downSite[0] - w/2 + 'px';
 				oMoveWrap.style.top =  downSite[1] - h/2 + 'px';
 				var oTipAct;
-				var moduleSite; // 模块插入的位置
+				var prevModuleSite = null; // 模块插入的位置（改变前）
+				var moduleSite = null; // 模块插入的位置（当前）
+				if (!hasTipAct) {
+					// 小程序内创建模块容器标签
+					var oSingleModule2 = document.createElement('div');
+					oSingleModule2.className = 'single-module active';
+					oSingleModule2.innerHTML = moduleJson.moduleHtml[idx];
+					oView.appendChild( oSingleModule2 );
+					oSingleModule2.style.display = 'none';
+					hasTipAct =true;
+				}
+				//获取active标签
+	        	var activeMd = oView.getElementsByClassName('active')[0];
 				window.onmousemove = function (ev) {
-					moduleSite = null;
 					var ev = ev || window.event;
 					var x = ev.clientX;
 					var y = ev.clientY;
@@ -199,46 +210,28 @@
 					        var osm_width = oSingleModule[i].getBoundingClientRect().width;  //容器宽
 					        var osm_height = oSingleModule[i].getBoundingClientRect().height;//容器高
 					        if ( ev.pageX > osm_x && ev.pageX < osm_x + osm_width && ev.pageY > osm_y && ev.pageY < osm_y + osm_height ) {
-					        	moduleSite=i;
+					        	// 将active标签放入指定位置
+
+					        	oView.insertBefore( activeMd, oView.children[i] );
+					        	oSingleModule2.style.display = '';
 					        }
-						}
-						if (!hasTipAct) { //判断预存放位置提示标签是否存在
-							oTipAct = document.createElement('div'); //创建新的预存放位置提示标签
-							oTipAct.id = 's-m-active';
-							if (moduleSite!=null) {
-								oView.insertBefore( oTipAct, oView.childNodes[moduleSite+1] );
-							} else {
-								oView.appendChild( oTipAct );
-							}
-							hasTipAct =true;
 						}
 						oMoveWrap.onmouseup = function () {
 							window.onmousemove = null;
 							oView.style.backgroundColor = "";
-							// 小程序内创建模块容器标签
-							var oSingleModule2 = document.createElement('div');
-							oSingleModule2.className = 'single-module';
-							oSingleModule2.innerHTML = moduleJson.moduleHtml[idx];
-							if (moduleSite!=null) {
-								oView.insertBefore( oSingleModule2, oView.childNodes[moduleSite+1] );
-							} else {
-								oView.appendChild( oSingleModule2 );
-							}
+							
 							oBody.removeChild( oMoveWrap );
 							hasMoveView = false;
+							// 鼠标抬起 移除提示样式"active"
 							if (hasTipAct) {
-								oView.removeChild( oTipAct ); //移除提示标签
+								for (var i = 0; i < oSingleModule.length; i++) {
+									oSingleModule[i].classList.remove('active');
+								}
 								hasTipAct=false;
 							}
 						}
 					} else {
 						oView.style.backgroundColor = "";
-						// 移除提示标签
-						if (hasTipAct) {
-							var oTipAct2 = document.getElementById('s-m-active'); //获取已创建的预存放位置提示标签
-							oView.removeChild(oTipAct2);
-							hasTipAct=false;
-						}
 						oMoveWrap.onmouseup = function () {
 							window.onmousemove = null;
 							oMoveWrap.style.transition = 'all 0.3s ease';
@@ -252,7 +245,11 @@
 									hasMoveView = false;
 								},300);
 							}
-							
+							// 删除active标签
+							if (hasTipAct) {
+								oView.removeChild( activeMd );
+								hasTipAct=false;
+							}
 						}
 					}
 				}
